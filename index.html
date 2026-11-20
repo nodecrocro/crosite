@@ -2,74 +2,261 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="A professional portfolio for projects, technical writeups, and certifications.">
+  <meta name="theme-color" content="#0b090e">
   <title>Crosite</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/webp" href="assets/crocro-mark.webp">
+  <style>@media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }</style>
+  <link rel="stylesheet" href="styles.css">
+  <script src="portfolio.js" defer></script>
+  <script src="site.js" defer></script>
+  <script src="earth.js" defer></script>
 </head>
-
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header" id="top" tabindex="-1">
+    <nav class="browser-tabs" aria-label="Site pages">
+      <a href="index.html" aria-label="Home" aria-current="page"><span class="tab-icon" aria-hidden="true">&gt;_</span><span class="tab-full" aria-hidden="true">Home</span><span class="tab-short" aria-hidden="true">Home</span></a>
+      <a href="writeups.html" aria-label="Writeups"><span class="tab-icon" aria-hidden="true">[W]</span><span class="tab-full" aria-hidden="true">Writeups</span><span class="tab-short" aria-hidden="true">Writeups</span></a>
+      <a href="certifications.html" aria-label="Certifications"><span class="tab-icon" aria-hidden="true">[C]</span><span class="tab-full" aria-hidden="true">Certifications</span><span class="tab-short" aria-hidden="true">Certs</span></a>
+      <a href="achievements.html" aria-label="Achievements"><span class="tab-icon" aria-hidden="true">[A]</span><span class="tab-full" aria-hidden="true">Achievements</span><span class="tab-short" aria-hidden="true">Awards</span></a>
+      <a href="projects.html" aria-label="Projects"><span class="tab-icon" aria-hidden="true">[P]</span><span class="tab-full" aria-hidden="true">Projects</span><span class="tab-short" aria-hidden="true">Projects</span></a>
+      <a href="experience.html" aria-label="Work experience"><span class="tab-icon" aria-hidden="true">[E]</span><span class="tab-full" aria-hidden="true">Experience</span><span class="tab-short" aria-hidden="true">Work</span></a>
+    </nav>
+  </header>
 
-<header>
-  <div class="nav">
-    <div class="logo">Decrocro</div>
-    <div class="links">
-      <a href="dashboard.php">Dashboard</a>
-      <a href="login.php">Login</a>
-      <a href="sign up.php">Sign up</a>
+  <div class="shell workspace">
+    <div class="workspace-rail">
+      <details class="section-dock" open>
+        <summary class="dock-title" aria-label="Explorer: On this page"><span class="dock-symbol" aria-hidden="true"></span><span class="dock-name">Explorer</span></summary>
+        <nav aria-label="On this page">
+          <p class="dock-group-label" aria-hidden="true">On this page</p>
+          <ul class="dock-links">
+            <li><a href="#about">About me</a></li>
+            <li><a href="#achievements">Achievements</a></li>
+            <li><a href="#certifications">Latest certifications</a></li>
+            <li><a href="#work">Projects</a></li>
+            <li><a href="#experience">Work experience</a></li>
+            <li><a href="#field-notes">Field notes</a></li>
+            <li><a href="#writeups">Latest writeups</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+        </nav>
+      </details>
     </div>
 
- <a href="https://discord.gg/F5sTy2wBPJ"
-       target="_blank"
-       class="discord-btn">
-       
-       <img src="images/Discord-Logo.png"
-        alt="Discord"
-        class="discord-icon">
-       Join Discord
- </a>
+    <main id="main" tabindex="-1">
+      <section class="hero" aria-labelledby="intro-title">
+        <div class="hero-copy">
+          <p class="eyebrow hero-eyebrow"><span>[tty1] ~/crosite</span> welcome to my site</p>
+          <h1 id="intro-title"><span class="hero-greeting">$ whoami</span> <span class="hero-name" data-name>Decrocro</span><span class="hero-cursor" aria-hidden="true">_</span></h1>
+          <p class="hero-description" id="intro">I’m Naim, a Cybersecurity Technology diploma student at German-Malaysian Institute. I built this site to see how far I could push a website and to learn along the way.</p>
+          <div class="actions">
+            <a class="button button-primary hero-cta" href="#work">Explore my work <span aria-hidden="true">-&gt;</span></a>
+          </div>
+        </div>
+        <figure class="earth-panel">
+          <div class="terminal-bar">
+            <span aria-hidden="true">[tty1] ~/earth.asc</span>
+            <button type="button" class="earth-toggle" id="earth-toggle" aria-controls="earth-art" hidden>Pause rotation</button>
+          </div>
+          <div class="earth-display"><pre id="earth-art" class="earth-art" aria-hidden="true">                                                         .                  
+                                                                            
+                          #######------------**+++            .             
+       +              #######-######----------****++++                      
+                  ###=@@@@==@@@@@##----#-------*****++++--         .        
+ .              #@@@@@@===@@@@@@@==------###-#********++++--                
+             ##@@@@@@====@=====@@====--########********++++---:         .   
+      .     #@@@@@@@=================###########*******+++++----            
+          #@@@=@==@==============@@===###--#####********+++++----:          
+         #======================@@@@@@##########*****--*++++++---::         
+        #=========================@@@@##########*****---:+++++----::        
+       #=======================@@@@@@####-#####-*******-:+++++----:::       
+      -#======================@@@@@@--##-#######********++++++----::::      
+      -#=======================@@@@#####-----##----****++++++-----:::.      
+     #--======================@@@@############*********++++++-...-:::..     
+     ##-===================@@@@@#############*********+++++++-.....::..     
+     ###-================@@@@@##############*********+++++++--.......:.     
+     ####--===============@###############**********+++++++-...........     
++    *####----=========--################**********+++++++---..........     
+      *####--------------##############**********++++++++---..........      
+      **####---------------#########************++++++++----..........      
+       **######--------------#-------*********++++++++----...........       
+        ****####-----------------------*****+++++++++---............        
+         *******------------------------*++++++++++-----...........         
+          +*****----------------------:::+++++++--------:.::......          
+            ++**------------------:::::::+++++--------:..::.....            
+             ++:::::-------:::::::::::::+++--------::..:::.....             
+                :::::::::::::::::::::::...-------::.........                
+                  ...::::::::::::.........---::::.........                  
+                      ................................       .              
+                          ........................                          
+                                                                  .         
+.                                                                           </pre></div>
+          <figcaption><span>FIG. 01 / EARTH</span><span aria-hidden="true">ASCII // ORTHOGRAPHIC</span></figcaption>
+        </figure>
+      </section>
+
+      <section class="section split-section profile-overview" id="about" aria-labelledby="about-title">
+        <header class="section-head">
+          <h2 id="about-title">About me</h2>
+        </header>
+        <div class="about-content">
+          <div id="bio"></div>
+          <ul class="tags" id="skills" aria-label="Skills" hidden></ul>
+          <a class="button button-outline" id="resume" hidden>View résumé</a>
+        </div>
+      </section>
+
+      <div class="section library proof-grid">
+        <section class="proof-panel" id="achievements" aria-labelledby="achievements-title">
+          <header class="section-head">
+            <h2 id="achievements-title">Achievements</h2>
+          </header>
+          <div class="section-records">
+            <div class="rows" id="achievement-list"></div>
+            <a class="text-button entry-link" href="achievements.html">View all achievements</a>
+          </div>
+        </section>
+
+        <section class="proof-panel" id="certifications" aria-labelledby="certifications-title">
+          <header class="section-head">
+            <h2 id="certifications-title">Latest certifications</h2>
+          </header>
+          <div class="rows" id="recent-certifications"></div>
+          <a class="text-button entry-link" href="certifications.html">View all certifications</a>
+        </section>
+      </div>
+
+      <section class="section" id="work" aria-labelledby="work-title">
+        <header class="section-head">
+          <h2 id="work-title">Projects</h2>
+          <p>Projects and the decisions behind them.</p>
+        </header>
+        <div class="project-grid" id="projects"></div>
+        <a class="text-button entry-link" href="projects.html">View all projects</a>
+      </section>
+
+      <section class="section split-section" id="experience" aria-labelledby="experience-title">
+        <header class="section-head">
+          <h2 id="experience-title">Work experience</h2>
+        </header>
+        <div class="section-records">
+          <div class="rows" id="experience-list"></div>
+          <a class="text-button entry-link" href="experience.html">View all work experience</a>
+        </div>
+      </section>
+
+      <section class="section" id="field-notes" aria-labelledby="field-notes-title">
+        <header class="section-head">
+          <h2 id="field-notes-title">Field notes</h2>
+          <p>Competition photos, team experiences, and event crew roles.</p>
+        </header>
+        <div class="field-carousel" id="field-carousel">
+          <div class="field-controls" id="field-controls" hidden>
+            <button type="button" class="button button-outline" id="field-prev" aria-label="Previous field note" aria-controls="field-note-list">&larr;</button>
+            <span class="field-count" id="field-count"></span>
+            <button type="button" class="button button-outline" id="field-next" aria-label="Next field note" aria-controls="field-note-list">&rarr;</button>
+            <button type="button" class="button button-outline field-play" id="field-play" aria-controls="field-note-list">Pause autoplay</button>
+          </div>
+          <div class="field-notes" id="field-note-list"></div>
+        </div>
+        <section class="field-activities" aria-labelledby="activities-title" hidden>
+          <h2 id="activities-title">Activities</h2>
+          <div class="rows record-list" id="activities-list"></div>
+        </section>
+      </section>
+
+      <section class="section" id="writeups" aria-labelledby="writeups-title">
+        <header class="section-head">
+          <h2 id="writeups-title">Latest writeups</h2>
+        </header>
+        <div class="rows" id="recent-writeups"></div>
+        <a class="text-button entry-link" href="writeups.html">View all writeups</a>
+      </section>
+
+      <section class="section contact-section" id="contact" aria-labelledby="contact-title">
+        <div class="contact-panel">
+          <div>
+            <h2 id="contact-title">Get in touch.</h2>
+            <p id="contact-note">Email and professional profiles coming soon.</p>
+          </div>
+          <div class="actions" id="contact-links"></div>
+          <pre class="mail-art" aria-hidden="true">+-----------------+
+| \             / |
+|   \         /   |
+|     \_____/     |
+|     /     \     |
+|   /         \   |
++-----------------+</pre>
+        </div>
+      </section>
+    </main>
   </div>
 
+  <footer class="shell site-footer">
+    <a class="brand" href="index.html">
+      <span class="brand-prompt" aria-hidden="true">[&gt;_]</span><span data-name>Decrocro</span>
+    </a>
+    <a class="footer-top" href="#top">Back to top <span aria-hidden="true">[^]</span></a>
+  </footer>
+
+  <button type="button" class="back-to-top" aria-label="Back to top" hidden><span aria-hidden="true">↑</span></button>
+
+  <div class="scroll-ruler" id="scroll-ruler" hidden>
+    <div class="ruler-heading" aria-hidden="true">DEPTH</div>
+    <div class="ruler-body">
+      <div class="ruler-scale" aria-hidden="true">
+        <svg class="ruler-ticks" viewBox="0 0 24 100" preserveAspectRatio="none" aria-hidden="true">
+          <path class="ticks-spine" d="M23 0V100"/>
+          <path class="ticks-minor" d="M18 1h5M18 2h5M18 3h5M18 4h5M18 6h5M18 7h5M18 8h5M18 9h5M18 11h5M18 12h5M18 13h5M18 14h5M18 16h5M18 17h5M18 18h5M18 19h5M18 21h5M18 22h5M18 23h5M18 24h5M18 26h5M18 27h5M18 28h5M18 29h5M18 31h5M18 32h5M18 33h5M18 34h5M18 36h5M18 37h5M18 38h5M18 39h5M18 41h5M18 42h5M18 43h5M18 44h5M18 46h5M18 47h5M18 48h5M18 49h5M18 51h5M18 52h5M18 53h5M18 54h5M18 56h5M18 57h5M18 58h5M18 59h5M18 61h5M18 62h5M18 63h5M18 64h5M18 66h5M18 67h5M18 68h5M18 69h5M18 71h5M18 72h5M18 73h5M18 74h5M18 76h5M18 77h5M18 78h5M18 79h5M18 81h5M18 82h5M18 83h5M18 84h5M18 86h5M18 87h5M18 88h5M18 89h5M18 91h5M18 92h5M18 93h5M18 94h5M18 96h5M18 97h5M18 98h5M18 99h5"/>
+          <path class="ticks-medium" d="M12 5h11M12 10h11M12 15h11M12 20h11M12 30h11M12 35h11M12 40h11M12 45h11M12 55h11M12 60h11M12 65h11M12 70h11M12 80h11M12 85h11M12 90h11M12 95h11"/>
+          <path class="ticks-major" d="M2 0h21M2 25h21M2 50h21M2 75h21M2 100h21"/>
+        </svg>
+        <span style="--at:0%">00</span>
+        <span style="--at:25%">25</span>
+        <span style="--at:50%">50</span>
+        <span style="--at:75%">75</span>
+        <span style="--at:100%">100</span>
+      </div>
+      <input id="scroll-position" type="range" min="0" max="100" step="1" value="0" aria-label="Page scroll position" aria-orientation="vertical" aria-valuetext="0 percent">
+    </div>
+    <span class="ruler-readout" id="scroll-readout" aria-hidden="true">000%</span>
   </div>
-</header>
 
-<main class="page">
-    <section class="hero">
-      <h2 class="hero-title">
-        Creating the <span id="typing" class="glow"></span><span class="caret" aria-hidden="true"></span>website
-      </h2>
+  <template id="project-template">
+    <article class="project">
+      <div class="project-cover" aria-hidden="true"></div>
+      <div class="project-copy">
+        <p class="entry-label"></p>
+        <h3></h3>
+        <p class="summary"></p>
+        <button class="text-button entry-link" type="button">View project</button>
+      </div>
+    </article>
+  </template>
 
-      <p class="hero-sub">
-        We are a team of passionate developers that eager to learn more everyday
-      </p>
-    </section>
-  </main>
+  <template id="row-template">
+    <article class="entry-row">
+      <div>
+        <p class="entry-label"></p>
+        <h3></h3>
+        <p class="summary"></p>
+      </div>
+      <div class="entry-action"></div>
+    </article>
+  </template>
 
-  <script>
-    const el = document.getElementById("typing");
-    const phrases = ["best", "safest", "cleanest"];
-    let pi = 0, i = 0, deleting = false;
-
-    function tick() {
-      const word = phrases[pi];
-      if (!deleting) {
-        i++;
-        el.textContent = word.slice(0, i);
-        if (i === word.length) {
-          deleting = true;
-          setTimeout(tick, 900);
-          return;
-        }
-      } else {
-        i--;
-        el.textContent = word.slice(0, i);
-        if (i === 0) {
-          deleting = false;
-          pi = (pi + 1) % phrases.length;
-        }
-      }
-      setTimeout(tick, deleting ? 45 : 70);
-    }
-    tick();
-  </script>
+  <dialog id="entry-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-inner">
+      <form method="dialog"><button class="button button-outline" autofocus>Close</button></form>
+      <p class="entry-label" id="dialog-label"></p>
+      <h2 id="dialog-title"></h2>
+      <p id="dialog-summary"></p>
+      <div class="dialog-body" id="dialog-body"></div>
+      <div class="actions" id="dialog-links"></div>
+    </div>
+  </dialog>
 </body>
 </html>
