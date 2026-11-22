@@ -389,7 +389,8 @@ wideSidebar.addEventListener('change', restoreSidebar);
 window.addEventListener('pageshow', event => {
   if (event.persisted) restoreSidebar();
 });
-sidebar.querySelector('summary').addEventListener('click', event => {
+const dockHandle = sidebar.querySelector('summary');
+dockHandle.addEventListener('click', event => {
   if (event.defaultPrevented) return;
   sidebar.classList.add('dock-interacted');
   sidebarChoice = sidebar.open ? 'closed' : 'open';
@@ -404,6 +405,69 @@ sidebar.addEventListener('click', event => {
   sidebar.open = false;
   section.focus({ preventScroll: true });
 });
+
+function makeExplorerDraggable() {
+  const gutter = 8;
+  let pointer;
+  let moved = false;
+
+  function place(left, top) {
+    const width = sidebar.offsetWidth;
+    const visibleHeight = Math.min(sidebar.scrollHeight, 180);
+    const x = Math.max(gutter, Math.min(left, document.documentElement.clientWidth - width - gutter));
+    const y = Math.max(gutter, Math.min(top, innerHeight - Math.max(dockHandle.offsetHeight, visibleHeight) - gutter));
+    sidebar.style.setProperty('--dock-x', `${x}px`);
+    sidebar.style.setProperty('--dock-y', `${y}px`);
+  }
+
+  function keepInView() {
+    if (!sidebar.style.getPropertyValue('--dock-x')) return;
+    const { left, top } = sidebar.getBoundingClientRect();
+    place(left, top);
+  }
+
+  dockHandle.setAttribute('aria-description', 'Drag to move. With keyboard focus, hold Shift and use the arrow keys to move.');
+  dockHandle.addEventListener('pointerdown', event => {
+    if (event.button !== 0 || !event.isPrimary) return;
+    const { left, top } = sidebar.getBoundingClientRect();
+    pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, left, top };
+    moved = false;
+    dockHandle.setPointerCapture(event.pointerId);
+  });
+  dockHandle.addEventListener('pointermove', event => {
+    if (event.pointerId !== pointer?.id) return;
+    const dx = event.clientX - pointer.x;
+    const dy = event.clientY - pointer.y;
+    if (!moved && Math.hypot(dx, dy) < 7) return;
+    moved = true;
+    sidebar.classList.add('is-dragging');
+    place(pointer.left + dx, pointer.top + dy);
+  });
+  dockHandle.addEventListener('lostpointercapture', () => {
+    pointer = undefined;
+    sidebar.classList.remove('is-dragging');
+  });
+  dockHandle.addEventListener('click', event => {
+    if (moved && event.detail > 0) event.preventDefault();
+    moved = false;
+  }, { capture: true });
+
+  const directions = { ArrowUp: [0, -24], ArrowDown: [0, 24], ArrowLeft: [-24, 0], ArrowRight: [24, 0] };
+  dockHandle.addEventListener('keydown', event => {
+    const direction = directions[event.key];
+    if (!event.shiftKey || !direction) return;
+    event.preventDefault();
+    const { left, top } = sidebar.getBoundingClientRect();
+    place(left + direction[0], top + direction[1]);
+  });
+  sidebar.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || !sidebar.open) return;
+    sidebar.open = false;
+    dockHandle.focus({ preventScroll: true });
+  });
+  sidebar.addEventListener('toggle', keepInView);
+  window.addEventListener('resize', keepInView);
+}
 
 // Short pages and viewport changes can cause the browser to skip a native transition.
 function settlePage() {
@@ -533,28 +597,11 @@ function setupDepthRuler() {
   }
 
   function updateMarkers(scrollTop) {
-    const height = body.clientHeight;
-    const mapCue = Math.min(innerHeight * .28, 220);
     const animationCue = Math.min(innerHeight * .68, 600);
-    const spacing = Math.min(24, Math.max(12, (height - 92) / Math.max(1, markers.length - 1)));
-    const zoomOrigin = height * scrollTop / scrollRange;
-    const headingTops = markers.map(marker => scrollTop + marker.heading.getBoundingClientRect().top);
-    const triggerOffsets = headingTops.map(top => Math.min(scrollRange, top - animationCue));
+    const triggerOffsets = markers.map(({ heading }) => (
+      Math.min(scrollRange, scrollTop + heading.getBoundingClientRect().top - animationCue)
+    ));
     const currentOffset = triggerOffsets.findLast(offset => offset <= scrollTop + 1);
-    let overviewTop = 42 - spacing;
-    let zoomedTop = 42 - spacing;
-
-    // Separate both ends of the zoom transition in navigation order.
-    // Interpolating these positions keeps the same gap throughout the transition.
-    for (const [index, marker] of markers.entries()) {
-      const upperLimit = height - 48 - (markers.length - 1 - index) * spacing;
-      const depth = Math.max(0, Math.min(1, (headingTops[index] - mapCue) / scrollRange));
-      const ideal = 7 + depth * (height - 14);
-      overviewTop = Math.min(upperLimit, Math.max(overviewTop + spacing, ideal));
-      zoomedTop = Math.min(upperLimit, Math.max(zoomedTop + spacing, zoomOrigin + (ideal - zoomOrigin) * 7));
-      marker.link.style.setProperty('--marker-overview', `${overviewTop}px`);
-      marker.link.style.setProperty('--marker-zoomed', `${zoomedTop}px`);
-    }
 
     for (const [index, marker] of markers.entries()) {
       const active = currentOffset !== undefined && Math.abs(currentOffset - triggerOffsets[index]) < 2;
@@ -962,6 +1009,7 @@ function createTextTyper(motion) {
 // Set up after all deferred scripts, including the writeup archive renderer.
 document.addEventListener('DOMContentLoaded', () => {
   setupExplorer();
+  makeExplorerDraggable();
   setupDepthRuler();
   setupArchiveArt();
   setupBackToTop();

@@ -39,6 +39,20 @@ p, h1, h2, h3 { margin: 0; }
   padding: .4rem .7rem; color: var(--ink); font-weight: 700; cursor: pointer; list-style: none;
   border-radius: .6rem;
 }
+.section-dock {
+  position: fixed; z-index: 4;
+  inset: var(--dock-y, max(4rem, calc(env(safe-area-inset-top, 0px) + .5rem))) auto auto
+    var(--dock-x, max(.5rem, env(safe-area-inset-left, 0px)));
+  width: min(15rem, calc(100vw - 1rem));
+  max-height: calc(100dvh - var(--dock-y, 4rem) - max(.5rem, env(safe-area-inset-bottom, 0px)));
+  overflow: auto; scrollbar-width: thin;
+}
+.section-dock[open] { box-shadow: 0 .75rem 2rem #08060dc4; }
+.section-dock .dock-title {
+  position: sticky; top: 0; z-index: 1; background: #120f17;
+  cursor: grab; touch-action: none; user-select: none;
+}
+.section-dock.is-dragging .dock-title { cursor: grabbing; }
 .dock-title::-webkit-details-marker { display: none; }
 .dock-title:focus-visible, .dock-links a:focus-visible { outline-offset: -3px; }
 .dock-symbol {
@@ -56,6 +70,7 @@ p, h1, h2, h3 { margin: 0; }
 .dock-empty { padding: .65rem .7rem; color: var(--muted); font-size: .75rem; }
 .dock-links a {
   display: flex; gap: .45rem; align-items: center; min-height: 2.75rem;
+  touch-action: manipulation;
   padding: .3rem .55rem; border: 1px solid transparent; border-radius: .35rem; font-size: inherit;
 }
 .dock-links a:hover, .dock-links a:focus-visible { background: #21182b; color: var(--ink); }
@@ -186,19 +201,16 @@ dialog::backdrop { background: #09060cde; }
 .dialog-body p { max-width: 62ch; margin-top: .85rem; }
 .dialog-inner .actions:not(:empty) { margin-top: 1.25rem; }
 
-/* Keep only the explorer card visible; the desktop track has no painted rail. */
+/* Reserve a stable desktop column and a compact mobile launcher slot. */
 @media (min-width: 78rem) {
   .workspace { --dock-size: clamp(12.75rem, 13vw, 15.5rem); width: 100%; flex: 1; display: grid; grid-template-columns: var(--dock-size) minmax(0, 1fr); }
-  .workspace:has(.section-dock:not([open])) { --dock-size: calc(3.1rem + env(safe-area-inset-left, 0px)); }
-  .workspace-rail { --dock-inset: 1.5rem; padding: var(--dock-inset) .2rem .75rem max(.35rem, env(safe-area-inset-left, 0px)); }
-  .section-dock { position: sticky; top: var(--dock-inset); max-height: calc(100dvh - var(--dock-inset) - .75rem); overflow: auto; scrollbar-width: thin; }
+  .section-dock[open] { width: calc(var(--dock-size) - 1rem); }
   .workspace main { width: min(100%, var(--frame)); justify-self: center; padding-inline: clamp(1.65rem, 3vw, 4.8rem) max(var(--edge), env(safe-area-inset-right, 0px)); }
 }
 @media (max-width: 77.999rem) {
   .workspace { width: 100%; }
   .workspace main { width: min(var(--frame), calc(100% - 2 * var(--edge) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))); margin-inline: auto; }
-  .workspace-rail { width: min(16rem, 100%); padding: .85rem .35rem 0 max(.35rem, env(safe-area-inset-left, 0px)); }
-  .workspace-rail:has(.section-dock:not([open])) { width: calc(3.45rem + env(safe-area-inset-left, 0px)); }
+  .workspace-rail { min-block-size: 3.55rem; }
 }
 @media (max-width: 48rem) {
   .tab-full { display: none; }
@@ -218,12 +230,7 @@ dialog::backdrop { background: #09060cde; }
 @media (prefers-reduced-motion: no-preference) {
   @supports (interpolate-size: allow-keywords) and (interactivity: inert) and selector(::details-content) {
     .workspace { --dock-motion: 220ms cubic-bezier(.2, .75, .25, 1); }
-    .workspace:has(.dock-interacted) { transition: grid-template-columns var(--dock-motion); }
-    .workspace:has(.dock-interacted) .workspace-rail { transition: width var(--dock-motion); }
     .section-dock { interpolate-size: allow-keywords; overflow-x: hidden; }
-    .section-dock:not([open]) { width: 100%; min-width: 2.75rem; overflow: hidden; }
-    .section-dock nav { min-width: 11rem; }
-    .section-dock:not([open]) .dock-title { width: 100%; }
     .section-dock:not([open]) nav { interactivity: inert; }
     .section-dock::details-content { block-size: 0; overflow: clip; opacity: 0; }
     .section-dock[open]::details-content { block-size: auto; opacity: 1; }
@@ -368,18 +375,21 @@ body:has(dialog[open]) .back-to-top { visibility: hidden; }
   .is-precise .ruler-readout { font-size: .71rem; }
   .is-bottom .ruler-readout { transform: translateY(-100%); padding-block: 0 .38rem; }
 
-  .ruler-markers { position: absolute; inset: 0 100% 0 auto; width: 12rem; z-index: 1; pointer-events: none; }
+  .ruler-markers {
+    position: absolute; inset: 2rem 100% 1.65rem auto; width: 12rem;
+    display: flex; flex-direction: column; flex-wrap: nowrap; justify-content: space-evenly;
+    align-items: flex-end; gap: 0; z-index: 1; pointer-events: none;
+  }
   .ruler-markers a {
-    position: absolute; inset-inline-end: 0;
-    top: calc(var(--marker-overview) + (var(--marker-zoomed) - var(--marker-overview)) * (var(--depth-zoom) - 1) / 6);
-    max-inline-size: 100%; min-block-size: 0; transform: translateY(-50%);
+    position: relative; flex: none; max-inline-size: 100%; min-block-size: 0;
     padding: .22rem .35rem; white-space: nowrap; text-transform: uppercase;
     font: 700 .82rem/1 var(--mono); color: #e7d9f0bd; text-shadow: 0 1px 5px #0b090e, 0 1px 2px #0b090e;
     cursor: pointer; pointer-events: auto;
   }
   .ruler-markers a span { overflow: hidden; text-overflow: ellipsis; }
   .ruler-markers a:is(:hover, :focus-visible) { color: #e7bdff; text-shadow: 0 0 7px #a66ce0; }
-  .ruler-markers a:is(.is-current, .is-moving):not(:hover, :focus-visible) span { opacity: 0; }
+  .ruler-markers a.is-current:not(:hover, :focus-visible) span { opacity: .65; }
+  .ruler-markers a.is-moving:not(:hover, :focus-visible) span { opacity: 0; }
   .ruler-markers a.is-current::after {
     content: ""; position: absolute; inset-inline-end: -.3rem; width: 5px; height: 5px;
     border-radius: 50%; background: var(--red);
