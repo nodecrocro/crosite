@@ -431,17 +431,119 @@ const position = byId('scroll-position');
 const readout = byId('scroll-readout');
 const rulerMedia = matchMedia('(min-width: 54rem) and (min-height: 25rem) and (hover: hover) and (pointer: fine) and (forced-colors: none)');
 
-if (CSS.supports('scrollbar-width', 'none') && CSS.supports('writing-mode', 'vertical-lr')) {
+function setupDepthRuler() {
+  if (!CSS.supports('scrollbar-width', 'none') || !CSS.supports('writing-mode', 'vertical-lr')) return;
   const root = document.documentElement;
   const scrollport = document.scrollingElement;
+  const body = ruler.querySelector('.ruler-body');
+  const scale = ruler.querySelector('.ruler-scale');
+  const navigation = document.createElement('nav');
+  navigation.className = 'ruler-markers';
+  navigation.setAttribute('aria-label', 'Page sections on depth ruler');
+  body.prepend(navigation);
+
+  // Reuse the Explorer destinations so both controls track the content on this page.
+  const markers = [...dockList.querySelectorAll('a[href^="#"]')].flatMap(shortcut => {
+    const target = byId(shortcut.hash.slice(1));
+    const heading = target?.matches('h2, h3') ? target : target?.querySelector('h2, h3');
+    if (!heading || !heading.getClientRects().length) return [];
+    const link = document.createElement('a');
+    const label = document.createElement('span');
+    link.href = shortcut.hash;
+    label.textContent = heading.textContent.trim();
+    link.append(label);
+    navigation.append(link);
+    return [{ heading, link, label }];
+  });
+  for (let percent = 0; percent <= 100; percent += 5) {
+    const label = document.createElement('span');
+    label.className = `ruler-fine-label${percent % 10 ? ' ruler-fine-intermediate' : ''}`;
+    label.style.setProperty('--at', `${percent}%`);
+    label.textContent = percent;
+    scale.append(label);
+  }
+  position.step = '.1';
+
   let frame = 0;
   let scrollRange = 0;
   let topBarHeight;
+  let near = false;
+  let fine = false;
+  let positioned = false;
 
   function renderPosition(percent) {
     position.value = percent;
-    position.setAttribute('aria-valuetext', `${percent} percent`);
-    readout.textContent = `${String(percent).padStart(3, '0')}%`;
+    const value = fine ? percent.toFixed(1) : String(Math.round(percent));
+    position.setAttribute('aria-valuetext', `${value} percent`);
+    readout.textContent = `${value}%`;
+  }
+
+  function refreshPrecision() {
+    const next = near || ruler.contains(document.activeElement);
+    if (next === fine) return;
+    fine = next;
+    ruler.classList.toggle('is-precise', fine);
+    renderPosition(Number(position.value));
+  }
+
+  function moveLabel(marker, active, animate) {
+    marker.flight?.cancel();
+    marker.link.classList.toggle('is-current', active);
+    if (active) marker.link.setAttribute('aria-current', 'location');
+    else marker.link.removeAttribute('aria-current');
+    const heading = marker.heading.getBoundingClientRect();
+    if (!animate || heading.bottom < 0 || heading.top > innerHeight || marker.link.matches(':focus-visible')) return;
+
+    const origin = marker.label.getBoundingClientRect();
+    const offsetX = heading.left - origin.left;
+    const offsetY = heading.top + (heading.height - origin.height) / 2 - origin.top;
+    const copy = document.createElement('span');
+    copy.className = 'ruler-flight';
+    copy.setAttribute('aria-hidden', 'true');
+    copy.textContent = marker.label.textContent;
+    copy.style.left = `${origin.left}px`;
+    copy.style.top = `${origin.top}px`;
+    document.body.append(copy);
+    marker.link.classList.add('is-moving');
+
+    const flight = copy.animate([
+      { transform: 'translate(0, 0)', opacity: 1 },
+      { transform: `translate(${offsetX}px, ${offsetY}px) scale(1.3)`, opacity: .18 },
+    ], { duration: 330, direction: active ? 'normal' : 'reverse', easing: 'cubic-bezier(.25, .7, .3, 1)' });
+    marker.flight = flight;
+    flight.onfinish = flight.oncancel = () => {
+      copy.remove();
+      if (marker.flight !== flight) return;
+      marker.flight = undefined;
+      marker.link.classList.remove('is-moving');
+    };
+  }
+
+  function updateMarkers(scrollTop) {
+    const height = body.clientHeight;
+    const cue = Math.min(innerHeight * .28, 220);
+    const spacing = Math.min(24, Math.max(12, (height - 92) / Math.max(1, markers.length - 1)));
+    const lowest = height - 48;
+    const offsets = markers.map(marker => {
+      const bounds = marker.heading.getBoundingClientRect();
+      return Math.min(scrollRange, Math.max(0, scrollTop + bounds.top - cue));
+    });
+    const ordered = markers.map((marker, index) => ({ marker, offset: offsets[index] }))
+      .sort((left, right) => left.offset - right.offset);
+    const currentOffset = ordered.findLast(item => item.offset <= scrollTop + 1)?.offset;
+    let previous = 42 - spacing;
+    for (const [index, { marker, offset }] of ordered.entries()) {
+      const ideal = 6 + offset / scrollRange * (height - 12);
+      const top = Math.min(lowest - (ordered.length - 1 - index) * spacing, Math.max(previous + spacing, ideal));
+      marker.link.style.setProperty('--marker-top', `${top}px`);
+      previous = top;
+      const active = currentOffset !== undefined && Math.abs(currentOffset - offset) < 2;
+      if (active !== marker.active) {
+        marker.active = active;
+        moveLabel(marker, active, positioned && !motion.matches && typeof marker.label.animate === 'function');
+      }
+    }
+    positioned = true;
   }
 
   function syncRuler() {
@@ -457,9 +559,14 @@ if (CSS.supports('scrollbar-width', 'none') && CSS.supports('writing-mode', 'ver
     }
     ruler.hidden = !supported;
     root.classList.toggle('has-ruler', supported);
-    if (!supported) return;
-    const next = Math.max(0, Math.min(100, Math.round(100 * scrollport.scrollTop / scrollRange)));
-    if (Number(position.value) !== next) renderPosition(next);
+    if (!supported) {
+      positioned = false;
+      return;
+    }
+    const scrollTop = scrollport.scrollTop;
+    const next = Math.max(0, Math.min(100, Math.round(1000 * scrollTop / scrollRange) / 10));
+    renderPosition(next);
+    updateMarkers(scrollTop);
   }
 
   function queueRulerSync() {
@@ -472,6 +579,31 @@ if (CSS.supports('scrollbar-width', 'none') && CSS.supports('writing-mode', 'ver
     window.scrollTo({ top: scrollRange * percent / 100, behavior: 'instant' });
   });
 
+  function checkPointer(event) {
+    const bounds = ruler.getBoundingClientRect();
+    const edge = bounds.right - event.clientX;
+    near = !ruler.hidden && bounds.height > 0 && event.clientY >= bounds.top
+      && event.clientY <= bounds.bottom && edge >= 0
+      && edge <= (near || navigation.contains(event.target) ? bounds.width : position.clientWidth + 12);
+    refreshPrecision();
+  }
+
+  window.addEventListener('pointermove', checkPointer, { passive: true });
+  root.addEventListener('pointerleave', () => {
+    near = false;
+    refreshPrecision();
+  });
+  ruler.addEventListener('focusin', refreshPrecision);
+  ruler.addEventListener('focusout', () => queueMicrotask(refreshPrecision));
+  ruler.addEventListener('wheel', event => {
+    if (!near || event.ctrlKey || !event.cancelable || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+    const multiplier = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1;
+    event.preventDefault();
+    window.scrollBy({ top: event.deltaY * multiplier * .32, behavior: 'instant' });
+  }, { passive: false });
+  motion.addEventListener('change', () => {
+    if (motion.matches) for (const marker of markers) marker.flight?.cancel();
+  });
   rulerMedia.addEventListener('change', queueRulerSync);
   window.addEventListener('scroll', queueRulerSync, { passive: true });
   window.addEventListener('resize', queueRulerSync);
@@ -783,6 +915,7 @@ function createTextTyper(motion) {
 // Set up after all deferred scripts, including the writeup archive renderer.
 document.addEventListener('DOMContentLoaded', () => {
   setupExplorer();
+  setupDepthRuler();
   setupArchiveArt();
   setupBackToTop();
   if (motion.matches) return;
