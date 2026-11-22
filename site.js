@@ -396,16 +396,6 @@ dockHandle.addEventListener('click', event => {
   sidebarChoice = sidebar.open ? 'closed' : 'open';
   try { sessionStorage.setItem(sidebarKey, sidebarChoice); } catch { /* The menu still toggles. */ }
 });
-sidebar.addEventListener('click', event => {
-  const link = event.target.closest('a[href^="#"]');
-  if (!link || wideSidebar.matches || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-  const section = byId(decodeURIComponent(link.hash.slice(1)));
-  if (!section) return;
-  sidebar.classList.remove('dock-interacted');
-  sidebar.open = false;
-  section.focus({ preventScroll: true });
-});
-
 function makeExplorerDraggable() {
   const gutter = 8;
   let pointer;
@@ -459,11 +449,6 @@ function makeExplorerDraggable() {
     event.preventDefault();
     const { left, top } = sidebar.getBoundingClientRect();
     place(left + direction[0], top + direction[1]);
-  });
-  sidebar.addEventListener('keydown', event => {
-    if (event.key !== 'Escape' || !sidebar.open) return;
-    sidebar.open = false;
-    dockHandle.focus({ preventScroll: true });
   });
   sidebar.addEventListener('toggle', keepInView);
   window.addEventListener('resize', keepInView);
