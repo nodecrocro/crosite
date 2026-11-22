@@ -506,24 +506,6 @@ function setupDepthRuler() {
   cursor.setAttribute('aria-hidden', 'true');
   cursor.append(readout);
   body.append(cursor);
-  const navigation = document.createElement('nav');
-  navigation.className = 'ruler-markers';
-  navigation.setAttribute('aria-label', 'Page sections on depth ruler');
-  body.prepend(navigation);
-
-  // Reuse the Explorer destinations so both controls track the content on this page.
-  const markers = [...dockList.querySelectorAll('a[href^="#"]')].flatMap(shortcut => {
-    const target = byId(shortcut.hash.slice(1));
-    const heading = target?.matches('h2, h3') ? target : target?.querySelector('h2, h3');
-    if (!heading || !heading.getClientRects().length) return [];
-    const link = document.createElement('a');
-    const label = document.createElement('span');
-    link.href = shortcut.hash;
-    label.textContent = heading.textContent.trim();
-    link.append(label);
-    navigation.append(link);
-    return [{ heading, link, label }];
-  });
   for (let percent = 0; percent <= 100; percent++) {
     const tick = document.createElement('i');
     tick.className = `ruler-tick tick-${percent % 25 === 0 ? 'major' : percent % 5 === 0 ? 'medium' : 'minor'}`;
@@ -543,7 +525,6 @@ function setupDepthRuler() {
   let topBarHeight;
   let near = false;
   let fine = false;
-  let positioned = false;
   let drag;
 
   function renderPosition(percent) {
@@ -563,56 +544,6 @@ function setupDepthRuler() {
     renderPosition(Number(position.value));
   }
 
-  function moveLabel(marker, active, animate) {
-    marker.flight?.cancel();
-    marker.link.classList.toggle('is-current', active);
-    if (active) marker.link.setAttribute('aria-current', 'location');
-    else marker.link.removeAttribute('aria-current');
-    const heading = marker.heading.getBoundingClientRect();
-    if (!animate || heading.bottom < 0 || heading.top > innerHeight || marker.link.matches(':focus-visible')) return;
-
-    const origin = marker.label.getBoundingClientRect();
-    const offsetX = heading.left - origin.left;
-    const offsetY = heading.top + (heading.height - origin.height) / 2 - origin.top;
-    const copy = document.createElement('span');
-    copy.className = 'ruler-flight';
-    copy.setAttribute('aria-hidden', 'true');
-    copy.textContent = marker.label.textContent;
-    copy.style.left = `${origin.left}px`;
-    copy.style.top = `${origin.top}px`;
-    document.body.append(copy);
-    marker.link.classList.add('is-moving');
-
-    const flight = copy.animate([
-      { transform: 'translate(0, 0)', opacity: .78 },
-      { transform: `translate(${offsetX}px, ${offsetY}px) scale(1.3)`, opacity: .18 },
-    ], { duration: 270, direction: active ? 'normal' : 'reverse', easing: 'cubic-bezier(.25, .7, .3, 1)' });
-    marker.flight = flight;
-    flight.onfinish = flight.oncancel = () => {
-      copy.remove();
-      if (marker.flight !== flight) return;
-      marker.flight = undefined;
-      marker.link.classList.remove('is-moving');
-    };
-  }
-
-  function updateMarkers(scrollTop) {
-    const animationCue = Math.min(innerHeight * .68, 600);
-    const triggerOffsets = markers.map(({ heading }) => (
-      Math.min(scrollRange, scrollTop + heading.getBoundingClientRect().top - animationCue)
-    ));
-    const currentOffset = triggerOffsets.findLast(offset => offset <= scrollTop + 1);
-
-    for (const [index, marker] of markers.entries()) {
-      const active = currentOffset !== undefined && Math.abs(currentOffset - triggerOffsets[index]) < 2;
-      if (active !== marker.active) {
-        marker.active = active;
-        moveLabel(marker, active, positioned && !motion.matches && typeof marker.label.animate === 'function');
-      }
-    }
-    positioned = true;
-  }
-
   function syncRuler() {
     frame = 0;
     scrollRange = Math.max(0, scrollport.scrollHeight - scrollport.clientHeight);
@@ -626,14 +557,10 @@ function setupDepthRuler() {
     }
     ruler.hidden = !supported;
     root.classList.toggle('has-ruler', supported);
-    if (!supported) {
-      positioned = false;
-      return;
-    }
+    if (!supported) return;
     const scrollTop = scrollport.scrollTop;
     const next = Math.max(0, Math.min(100, Math.round(1000 * scrollTop / scrollRange) / 10));
     renderPosition(next);
-    updateMarkers(scrollTop);
   }
 
   function queueRulerSync() {
@@ -695,9 +622,6 @@ function setupDepthRuler() {
     event.preventDefault();
     window.scrollBy({ top: event.deltaY * multiplier * .32, behavior: 'instant' });
   }, { passive: false });
-  motion.addEventListener('change', () => {
-    if (motion.matches) for (const marker of markers) marker.flight?.cancel();
-  });
   rulerMedia.addEventListener('change', queueRulerSync);
   window.addEventListener('scroll', queueRulerSync, { passive: true });
   window.addEventListener('resize', queueRulerSync);

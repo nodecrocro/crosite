@@ -320,8 +320,7 @@ body:has(dialog[open]) .back-to-top { visibility: hidden; }
   :root { --edge: max(5.15rem, 5.2vw); scrollbar-gutter: auto; }
   .has-ruler {
     scrollbar-width: none;
-    --ruler-gutter: max(9.75rem, var(--edge));
-    --back-to-top-inset: calc(var(--ruler-width) + 10rem);
+    --back-to-top-inset: calc(var(--ruler-width) + .65rem);
   }
   .has-ruler .scroll-ruler {
     position: fixed; z-index: 2;
@@ -338,7 +337,6 @@ body:has(dialog[open]) .back-to-top { visibility: hidden; }
     --depth-zoom: 7;
   }
   body:has(dialog[open]) .scroll-ruler { display: none; }
-  .ruler-heading { position: absolute; inset-block-start: .75rem; inset-inline-end: 100%; color: var(--muted); white-space: nowrap; }
   .ruler-body { position: relative; width: 100%; min-height: 0; }
   .ruler-scale { position: absolute; inset: 7px 0; overflow: clip; overflow-clip-margin: 6px; pointer-events: none; }
   .ruler-scale::before { content: ""; position: absolute; inset: 0 0 0 auto; border-inline-end: 1px solid #6a5279; }
@@ -374,31 +372,6 @@ body:has(dialog[open]) .back-to-top { visibility: hidden; }
   }
   .is-precise .ruler-readout { font-size: .71rem; }
   .is-bottom .ruler-readout { transform: translateY(-100%); padding-block: 0 .38rem; }
-
-  .ruler-markers {
-    position: absolute; inset: 2rem 100% 1.65rem auto; width: 12rem;
-    display: flex; flex-direction: column; flex-wrap: nowrap; justify-content: space-evenly;
-    align-items: flex-end; gap: 0; z-index: 1; pointer-events: none;
-  }
-  .ruler-markers a {
-    position: relative; flex: none; max-inline-size: 100%; min-block-size: 0;
-    padding: .22rem .35rem; white-space: nowrap; text-transform: uppercase;
-    font: 700 .82rem/1 var(--mono); color: #e7d9f0bd; text-shadow: 0 1px 5px #0b090e, 0 1px 2px #0b090e;
-    cursor: pointer; pointer-events: auto;
-  }
-  .ruler-markers a span { overflow: hidden; text-overflow: ellipsis; }
-  .ruler-markers a:is(:hover, :focus-visible) { color: #e7bdff; text-shadow: 0 0 7px #a66ce0; }
-  .ruler-markers a.is-current:not(:hover, :focus-visible) span { opacity: .65; }
-  .ruler-markers a.is-moving:not(:hover, :focus-visible) span { opacity: 0; }
-  .ruler-markers a.is-current::after {
-    content: ""; position: absolute; inset-inline-end: -.3rem; width: 5px; height: 5px;
-    border-radius: 50%; background: var(--red);
-  }
-  .ruler-flight {
-    position: fixed; z-index: 2; pointer-events: none; white-space: nowrap;
-    color: #ddbdff; text-shadow: 0 0 8px var(--bg), 0 0 4px var(--bg);
-    font: 700 .82rem/1 var(--mono); text-transform: uppercase; transform-origin: left center;
-  }
   #scroll-position {
     appearance: none; writing-mode: vertical-lr; direction: ltr;
     position: absolute; inset: 0 0 0 auto; width: 44px; height: 100%; margin: 0;
@@ -411,15 +384,6 @@ body:has(dialog[open]) .back-to-top { visibility: hidden; }
   #scroll-position::-moz-range-thumb { width: 24px; height: 12px; border: 0; background: transparent; }
 }
 
-@media (min-width: 54rem) and (max-width: 77.999rem) {
-  .has-ruler .workspace main {
-    width: min(var(--frame), calc(100% - var(--edge) - var(--ruler-gutter) - env(safe-area-inset-left, 0px)));
-    margin-inline: auto var(--ruler-gutter);
-  }
-}
-@media (min-width: 78rem) {
-  .has-ruler .workspace main { padding-inline-end: var(--ruler-gutter); }
-}
 @media (max-height: 34rem) {
   .scroll-ruler:not(.is-precise) .ruler-number-intermediate { visibility: hidden; }
 }
