@@ -437,6 +437,11 @@ function setupDepthRuler() {
   const scrollport = document.scrollingElement;
   const body = ruler.querySelector('.ruler-body');
   const scale = ruler.querySelector('.ruler-scale');
+  const cursor = document.createElement('span');
+  cursor.className = 'ruler-cursor';
+  cursor.setAttribute('aria-hidden', 'true');
+  cursor.append(readout);
+  body.append(cursor);
   const navigation = document.createElement('nav');
   navigation.className = 'ruler-markers';
   navigation.setAttribute('aria-label', 'Page sections on depth ruler');
@@ -455,9 +460,14 @@ function setupDepthRuler() {
     navigation.append(link);
     return [{ heading, link, label }];
   });
-  for (let percent = 0; percent <= 100; percent += 5) {
+  for (let percent = 0; percent <= 100; percent++) {
+    const tick = document.createElement('i');
+    tick.className = `ruler-tick tick-${percent % 25 === 0 ? 'major' : percent % 5 === 0 ? 'medium' : 'minor'}`;
+    tick.style.setProperty('--at', `${percent}%`);
+    scale.append(tick);
+    if (percent % 5 !== 0) continue;
     const label = document.createElement('span');
-    label.className = `ruler-fine-label${percent % 10 ? ' ruler-fine-intermediate' : ''}`;
+    label.className = `ruler-number${percent % 10 ? ' ruler-number-intermediate' : ''}`;
     label.style.setProperty('--at', `${percent}%`);
     label.textContent = percent;
     scale.append(label);
@@ -470,16 +480,19 @@ function setupDepthRuler() {
   let near = false;
   let fine = false;
   let positioned = false;
+  let drag;
 
   function renderPosition(percent) {
     position.value = percent;
+    ruler.style.setProperty('--depth-at', `${percent}%`);
+    ruler.classList.toggle('is-bottom', percent > 96);
     const value = fine ? percent.toFixed(1) : String(Math.round(percent));
     position.setAttribute('aria-valuetext', `${value} percent`);
     readout.textContent = `${value}%`;
   }
 
   function refreshPrecision() {
-    const next = near || ruler.contains(document.activeElement);
+    const next = near || !!drag || ruler.contains(document.activeElement);
     if (next === fine) return;
     fine = next;
     ruler.classList.toggle('is-precise', fine);
@@ -535,7 +548,9 @@ function setupDepthRuler() {
     for (const [index, { marker, offset }] of ordered.entries()) {
       const ideal = 6 + offset / scrollRange * (height - 12);
       const top = Math.min(lowest - (ordered.length - 1 - index) * spacing, Math.max(previous + spacing, ideal));
-      marker.link.style.setProperty('--marker-top', `${top}px`);
+      marker.link.style.setProperty('--marker-top', `${100 * top / height}%`);
+      marker.link.style.setProperty('--marker-first', `${30 + index * spacing}px`);
+      marker.link.style.setProperty('--marker-last', `${height - 35 - (ordered.length - 1 - index) * spacing}px`);
       previous = top;
       const active = currentOffset !== undefined && Math.abs(currentOffset - offset) < 2;
       if (active !== marker.active) {
@@ -579,12 +594,39 @@ function setupDepthRuler() {
     window.scrollTo({ top: scrollRange * percent / 100, behavior: 'instant' });
   });
 
+  function jumpToPercent(value) {
+    const percent = Math.round(Math.max(0, Math.min(100, value)) * 10) / 10;
+    renderPosition(percent);
+    window.scrollTo({ top: scrollRange * percent / 100, behavior: 'instant' });
+  }
+
+  position.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    position.focus({ preventScroll: true });
+    const bounds = scale.getBoundingClientRect();
+    const zoom = Number(getComputedStyle(ruler).getPropertyValue('--depth-zoom')) || 1;
+    const percent = Number(position.value);
+    const clicked = 100 * (event.clientY - bounds.top) / bounds.height;
+    const start = Math.max(0, Math.min(100, percent + (clicked - percent) / zoom));
+    drag = { y: event.clientY, start, height: bounds.height, zoom };
+    position.setPointerCapture(event.pointerId);
+    jumpToPercent(start);
+  });
+  position.addEventListener('pointermove', event => {
+    if (drag) jumpToPercent(drag.start + 100 * (event.clientY - drag.y) / (drag.height * drag.zoom));
+  });
+  position.addEventListener('lostpointercapture', () => {
+    drag = undefined;
+    refreshPrecision();
+  });
+
   function checkPointer(event) {
     const bounds = ruler.getBoundingClientRect();
     const edge = bounds.right - event.clientX;
     near = !ruler.hidden && bounds.height > 0 && event.clientY >= bounds.top
       && event.clientY <= bounds.bottom && edge >= 0
-      && edge <= (near || navigation.contains(event.target) ? bounds.width : position.clientWidth + 12);
+      && edge <= bounds.width;
     refreshPrecision();
   }
 

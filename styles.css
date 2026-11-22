@@ -12,8 +12,7 @@
   --tick-medium: #ae85c2;
   --mono: "Cascadia Mono", Consolas, "Liberation Mono", monospace;
   --edge: clamp(1.1rem, 5.2vw, 6rem);
-  --ruler-width: clamp(10.75rem, 15vw, 12rem);
-  --ruler-expanded-width: calc(var(--ruler-width) + 1.65rem);
+  --ruler-width: 4.5rem;
   --back-to-top-inset: max(.65rem, env(safe-area-inset-right, 0px));
   --frame: 144rem;
   scroll-behavior: smooth;
@@ -303,58 +302,83 @@ dialog::backdrop { background: #09060cde; }
 body:has(dialog[open]) .back-to-top { visibility: hidden; }
 
 /* Keep the native scrollbar unless the accessible desktop ruler is ready. */
+@property --depth-zoom {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
 .scroll-ruler { display: none; }
 @media (min-width: 54rem) and (min-height: 25rem) and (hover: hover) and (pointer: fine) and (forced-colors: none) {
   /* Reserve the same space on short pages, even when the ruler is hidden. */
   :root { --edge: max(5.15rem, 5.2vw); scrollbar-gutter: auto; }
   .has-ruler {
     scrollbar-width: none;
-    --ruler-gutter: calc(var(--ruler-expanded-width) + .5rem + env(safe-area-inset-right, 0px));
-    --back-to-top-inset: 4.75rem;
+    --ruler-gutter: max(9.75rem, var(--edge));
+    --back-to-top-inset: calc(var(--ruler-width) + 10rem);
   }
   .has-ruler .scroll-ruler {
     position: fixed; z-index: 2;
+    --depth-zoom: 1;
+    --depth-at: 0%;
     inset-block: max(var(--ruler-top, 0px), env(safe-area-inset-top, 0px)) 0;
     inset-inline-end: 0;
     display: grid; grid-template-rows: minmax(0, 1fr);
     width: var(--ruler-width); color: var(--muted); font: .7rem/1 var(--mono);
     padding-block-end: env(safe-area-inset-bottom, 0px);
-    pointer-events: none;
-  }
-  .has-ruler .scroll-ruler.is-precise {
-    width: var(--ruler-expanded-width);
-    background: linear-gradient(90deg, transparent, #1d1427 40%, #231831);
     pointer-events: auto;
   }
+  .has-ruler .scroll-ruler.is-precise {
+    --depth-zoom: 7;
+  }
   body:has(dialog[open]) .scroll-ruler { display: none; }
-  .ruler-heading, .ruler-readout { position: absolute; inset-inline-end: 2.85rem; pointer-events: none; }
-  .ruler-heading { inset-block-start: 1rem; }
-  .ruler-readout { inset-block-end: calc(env(safe-area-inset-bottom, 0px) + 1rem); color: var(--red); font-size: 1rem; font-weight: 700; }
-  .is-precise .ruler-readout { font-size: .75rem; }
+  .ruler-heading { position: absolute; inset-block-start: .75rem; inset-inline-end: 100%; color: var(--muted); white-space: nowrap; }
   .ruler-body { position: relative; width: 100%; min-height: 0; }
-  .ruler-scale { position: absolute; inset: 6px 0 6px 0; pointer-events: none; }
-  .ruler-ticks { position: absolute; inset: 0 0 0 auto; width: 24px; height: 100%; overflow: visible; fill: none; }
-  .ruler-ticks path { vector-effect: non-scaling-stroke; }
-  .ticks-spine { stroke: #6a5279; }
-  .ticks-minor { stroke: var(--tick-minor); visibility: hidden; }
-  .ticks-medium { stroke: var(--tick-medium); opacity: .65; }
-  .ticks-major { stroke: var(--signal); }
-  .ruler-scale span { position: absolute; top: var(--at); right: 26px; color: var(--muted); transform: translateY(-50%); font-size: .8rem; }
-  .ruler-scale .ruler-fine-label, .is-precise .ruler-scale span:not(.ruler-fine-label) { display: none; }
-  .is-precise .ruler-scale .ruler-fine-label { display: block; font-size: .66rem; }
-  .is-precise .ticks-minor { visibility: visible; }
+  .ruler-scale { position: absolute; inset: 7px 0; overflow: clip; overflow-clip-margin: 6px; pointer-events: none; }
+  .ruler-scale::before { content: ""; position: absolute; inset: 0 0 0 auto; border-inline-end: 1px solid #6a5279; }
+  .ruler-tick, .ruler-number {
+    position: absolute;
+    top: calc(var(--depth-at) + (var(--at) - var(--depth-at)) * var(--depth-zoom));
+    transform: translateY(-50%);
+  }
+  .ruler-tick { right: 0; width: 8px; height: 1px; background: var(--tick-minor); }
+  .tick-medium { width: 15px; background: var(--tick-medium); }
+  .tick-major { width: 23px; background: var(--signal); }
+  .ruler-number { right: 28px; color: #b1a7bb; font-size: .7rem; }
+  .is-precise .ruler-number { color: #d4c9dd; }
+  .ruler-cursor {
+    position: absolute; inset: 7px 0; z-index: 1; pointer-events: none; overflow: clip;
+  }
+  .ruler-cursor::before, .ruler-cursor::after, .ruler-readout {
+    position: absolute; inset-inline-end: 0; top: var(--depth-at);
+  }
+  .ruler-cursor::before {
+    content: ""; width: 100%; height: 12%; transform: translateY(-50%);
+    border-block: 1px solid #9375ad75;
+    background: linear-gradient(90deg, #c797f01c, #b487d60d);
+  }
+  .is-precise .ruler-cursor::before { opacity: .35; }
+  .ruler-cursor::after {
+    content: ""; width: 100%; height: 2px; top: min(var(--depth-at), calc(100% - 2px));
+    background: #dbadff; box-shadow: 0 0 7px #b879f4;
+  }
+  .ruler-readout {
+    padding: .38rem .25rem 0 .46rem; color: #e0bdff; font-size: .83rem; font-weight: 700;
+    background: linear-gradient(90deg, transparent, #100b18 22%);
+  }
+  .is-precise .ruler-readout { font-size: .71rem; }
+  .is-bottom .ruler-readout { transform: translateY(-100%); padding-block: 0 .38rem; }
 
-  .ruler-markers { position: absolute; inset: 0 3.05rem 0 0; z-index: 1; pointer-events: none; }
+  .ruler-markers { position: absolute; inset: 0 100% 0 auto; width: 12rem; z-index: 1; pointer-events: none; }
   .ruler-markers a {
-    position: absolute; top: var(--marker-top, 42px); inset-inline-end: 0;
+    position: absolute; inset-inline-end: 0;
+    top: clamp(var(--marker-first), calc(var(--depth-at) + (var(--marker-top) - var(--depth-at)) * var(--depth-zoom)), var(--marker-last));
     max-inline-size: 100%; min-block-size: 0; transform: translateY(-50%);
-    padding: .28rem .35rem; border: 1px solid transparent; border-radius: .25rem;
-    white-space: nowrap; font: 600 .72rem/1 var(--mono); color: #d5b7f5;
-    background: var(--bg); cursor: pointer; pointer-events: auto;
+    padding: .22rem .35rem; white-space: nowrap; text-transform: uppercase;
+    font: 700 .82rem/1 var(--mono); color: #d9cbe3; text-shadow: 0 1px 5px #0b090e, 0 1px 2px #0b090e;
+    cursor: pointer; pointer-events: auto;
   }
   .ruler-markers a span { overflow: hidden; text-overflow: ellipsis; }
-  .ruler-markers a:is(:hover, :focus-visible) { border-color: #806098; color: var(--ink); }
-  .ruler-markers a:is(.is-current, .is-moving):not(:hover, :focus-visible) { background: transparent; }
+  .ruler-markers a:is(:hover, :focus-visible) { color: #e7bdff; text-shadow: 0 0 7px #a66ce0; }
   .ruler-markers a:is(.is-current, .is-moving):not(:hover, :focus-visible) span { opacity: 0; }
   .ruler-markers a.is-current::after {
     content: ""; position: absolute; inset-inline-end: -.3rem; width: 5px; height: 5px;
@@ -363,7 +387,7 @@ body:has(dialog[open]) .back-to-top { visibility: hidden; }
   .ruler-flight {
     position: fixed; z-index: 2; pointer-events: none; white-space: nowrap;
     color: #ddbdff; text-shadow: 0 0 8px var(--bg), 0 0 4px var(--bg);
-    font: 600 .72rem/1 var(--mono); transform-origin: left center;
+    font: 700 .82rem/1 var(--mono); text-transform: uppercase; transform-origin: left center;
   }
   #scroll-position {
     appearance: none; writing-mode: vertical-lr; direction: ltr;
@@ -373,8 +397,8 @@ body:has(dialog[open]) .back-to-top { visibility: hidden; }
   #scroll-position:focus-visible { outline-offset: 0; }
   #scroll-position::-webkit-slider-runnable-track { width: 24px; background: transparent; }
   #scroll-position::-moz-range-track { width: 24px; background: transparent; }
-  #scroll-position::-webkit-slider-thumb { appearance: none; width: 24px; height: 12px; border: 2px solid #0b090e; border-inline-end: 0; background: var(--red); clip-path: polygon(0 50%, 32% 0, 100% 0, 100% 100%, 32% 100%); }
-  #scroll-position::-moz-range-thumb { width: 22px; height: 10px; border: 1px solid #0b090e; border-radius: 0; background: var(--red); clip-path: polygon(0 50%, 32% 0, 100% 0, 100% 100%, 32% 100%); }
+  #scroll-position::-webkit-slider-thumb { appearance: none; width: 24px; height: 12px; background: transparent; }
+  #scroll-position::-moz-range-thumb { width: 24px; height: 12px; border: 0; background: transparent; }
 }
 
 @media (min-width: 54rem) and (max-width: 77.999rem) {
@@ -387,10 +411,10 @@ body:has(dialog[open]) .back-to-top { visibility: hidden; }
   .has-ruler .workspace main { padding-inline-end: var(--ruler-gutter); }
 }
 @media (max-height: 34rem) {
-  .is-precise .ruler-scale .ruler-fine-intermediate { display: none; }
+  .scroll-ruler:not(.is-precise) .ruler-number-intermediate { visibility: hidden; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .has-ruler .scroll-ruler { transition: width 180ms ease-out; }
+  .has-ruler .scroll-ruler { transition: --depth-zoom 220ms cubic-bezier(.2,.7,.3,1); }
 }
 
 /* Archive and certification pages share the same terminal workspace. */
