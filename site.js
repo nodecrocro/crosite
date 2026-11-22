@@ -520,9 +520,9 @@ function setupDepthRuler() {
     marker.link.classList.add('is-moving');
 
     const flight = copy.animate([
-      { transform: 'translate(0, 0)', opacity: 1 },
+      { transform: 'translate(0, 0)', opacity: .78 },
       { transform: `translate(${offsetX}px, ${offsetY}px) scale(1.3)`, opacity: .18 },
-    ], { duration: 330, direction: active ? 'normal' : 'reverse', easing: 'cubic-bezier(.25, .7, .3, 1)' });
+    ], { duration: 270, direction: active ? 'normal' : 'reverse', easing: 'cubic-bezier(.25, .7, .3, 1)' });
     marker.flight = flight;
     flight.onfinish = flight.oncancel = () => {
       copy.remove();
@@ -534,25 +534,30 @@ function setupDepthRuler() {
 
   function updateMarkers(scrollTop) {
     const height = body.clientHeight;
-    const cue = Math.min(innerHeight * .28, 220);
+    const mapCue = Math.min(innerHeight * .28, 220);
+    const animationCue = Math.min(innerHeight * .68, 600);
     const spacing = Math.min(24, Math.max(12, (height - 92) / Math.max(1, markers.length - 1)));
-    const lowest = height - 48;
-    const offsets = markers.map(marker => {
-      const bounds = marker.heading.getBoundingClientRect();
-      return Math.min(scrollRange, Math.max(0, scrollTop + bounds.top - cue));
-    });
-    const ordered = markers.map((marker, index) => ({ marker, offset: offsets[index] }))
-      .sort((left, right) => left.offset - right.offset);
-    const currentOffset = ordered.findLast(item => item.offset <= scrollTop + 1)?.offset;
-    let previous = 42 - spacing;
-    for (const [index, { marker, offset }] of ordered.entries()) {
-      const ideal = 6 + offset / scrollRange * (height - 12);
-      const top = Math.min(lowest - (ordered.length - 1 - index) * spacing, Math.max(previous + spacing, ideal));
-      marker.link.style.setProperty('--marker-top', `${100 * top / height}%`);
-      marker.link.style.setProperty('--marker-first', `${30 + index * spacing}px`);
-      marker.link.style.setProperty('--marker-last', `${height - 35 - (ordered.length - 1 - index) * spacing}px`);
-      previous = top;
-      const active = currentOffset !== undefined && Math.abs(currentOffset - offset) < 2;
+    const zoomOrigin = height * scrollTop / scrollRange;
+    const headingTops = markers.map(marker => scrollTop + marker.heading.getBoundingClientRect().top);
+    const triggerOffsets = headingTops.map(top => Math.min(scrollRange, top - animationCue));
+    const currentOffset = triggerOffsets.findLast(offset => offset <= scrollTop + 1);
+    let overviewTop = 42 - spacing;
+    let zoomedTop = 42 - spacing;
+
+    // Separate both ends of the zoom transition in navigation order.
+    // Interpolating these positions keeps the same gap throughout the transition.
+    for (const [index, marker] of markers.entries()) {
+      const upperLimit = height - 48 - (markers.length - 1 - index) * spacing;
+      const depth = Math.max(0, Math.min(1, (headingTops[index] - mapCue) / scrollRange));
+      const ideal = 7 + depth * (height - 14);
+      overviewTop = Math.min(upperLimit, Math.max(overviewTop + spacing, ideal));
+      zoomedTop = Math.min(upperLimit, Math.max(zoomedTop + spacing, zoomOrigin + (ideal - zoomOrigin) * 7));
+      marker.link.style.setProperty('--marker-overview', `${overviewTop}px`);
+      marker.link.style.setProperty('--marker-zoomed', `${zoomedTop}px`);
+    }
+
+    for (const [index, marker] of markers.entries()) {
+      const active = currentOffset !== undefined && Math.abs(currentOffset - triggerOffsets[index]) < 2;
       if (active !== marker.active) {
         marker.active = active;
         moveLabel(marker, active, positioned && !motion.matches && typeof marker.label.animate === 'function');
@@ -985,7 +990,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (target.matches(textSelector)) typeText(target);
       if (target.matches(contentSelector)) target.classList.add('scroll-arriving');
     }
-  }, { rootMargin: '0px 0px -5% 0px', threshold: 0 });
+  }, { rootMargin: '0px 0px 56px 0px', threshold: 0 });
 
   for (const element of document.querySelector('main').querySelectorAll(`${textSelector}, ${contentSelector}`)) {
     if (!element.closest('.hero, [hidden]') && element.getBoundingClientRect().top >= innerHeight) reveal.observe(element);
